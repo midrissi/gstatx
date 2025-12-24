@@ -4,17 +4,29 @@
  * gstatx - Export stats of a repo or list of repos
  */
 
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import { listContributors } from "./commands/contributors";
 import { generateHist } from "./commands/hist";
 import { loadConfig } from "./utils/config";
+
+// Get version from package.json
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJsonPath = join(__dirname, "..", "package.json");
+const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8")) as {
+  version: string;
+};
+const version = packageJson.version;
 
 const program = new Command();
 
 program
   .name("gstatx")
   .description("A CLI tool to export statistics from git repositories")
-  .version("0.1.1")
+  .version(version)
   .option("-c, --config <path>", "Specify custom config file path")
   .configureHelp({
     helpWidth: 100,
