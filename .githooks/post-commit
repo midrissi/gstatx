@@ -1,0 +1,7 @@
+#!/bin/sh
+# Post-commit hook
+# Note: We don't create version tags here because npm version handles tag creation
+# Creating tags in this hook would conflict with npm version's tag creation process
+
+exit 0
+

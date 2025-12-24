@@ -1,0 +1,25 @@
+{
+  "//": "Cursor workspace rules",
+  "commitMessage": {
+    "style": "conventionalCommits",
+    "requireBody": false,
+    "types": [
+      "feat",
+      "fix",
+      "docs",
+      "style",
+      "refactor",
+      "perf",
+      "test",
+      "chore",
+      "ci",
+      "build",
+      "revert"
+    ]
+  },
+  "notes": [
+    "Use short, imperative subject lines (max ~72 chars).",
+    "Examples: \"feat: add JSON export format\", \"fix: handle missing git repository gracefully\".",
+    "Bodies and footers are optional, but may be used for context or breaking changes."
+  ]
+}
