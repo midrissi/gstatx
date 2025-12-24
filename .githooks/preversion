@@ -1,0 +1,23 @@
+#!/bin/sh
+# Pre-version hook to check if current commit already has a version tag
+# This helps prevent running npm version when the version is already bumped
+
+# Get current version from package.json
+CURRENT_VERSION=$(node -p "require('./package.json').version")
+TAG_NAME="v$CURRENT_VERSION"
+
+# Check if current HEAD already has this version tag
+if git describe --tags --exact-match HEAD 2>/dev/null | grep -q "^v"; then
+  EXISTING_TAG=$(git describe --tags --exact-match HEAD 2>/dev/null)
+  if [ "$EXISTING_TAG" = "$TAG_NAME" ]; then
+    echo "⚠️  Warning: Current commit already has version tag: $EXISTING_TAG"
+    echo "Current version in package.json: $CURRENT_VERSION"
+    echo ""
+    echo "The version bump appears to have already completed successfully."
+    echo "If you want to create a new version, run: npm version patch"
+    echo "(This will bump to the next version, not recreate the current one)"
+  fi
+fi
+
+exit 0
+

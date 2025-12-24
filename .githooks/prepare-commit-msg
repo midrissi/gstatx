@@ -1,0 +1,32 @@
+#!/bin/sh
+# Git hook to set commit message for npm version command
+# Sets message to "chore(version): bump vVERSION"
+
+COMMIT_MSG_FILE=$1
+COMMIT_SOURCE=$2
+SHA1=$3
+
+# Check if this commit includes package.json changes (npm version does this)
+if git diff --cached --name-only | grep -q "^package.json$"; then
+  # Extract new version from staged package.json using node
+  VERSION=$(node -e "
+    const fs = require('fs');
+    const { execSync } = require('child_process');
+    try {
+      const staged = execSync('git show :package.json', { encoding: 'utf-8' });
+      const pkg = JSON.parse(staged);
+      console.log(pkg.version);
+    } catch (e) {
+      const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
+      console.log(pkg.version);
+    }
+  " 2>/dev/null)
+  
+  if [ -n "$VERSION" ]; then
+    # Set the commit message
+    echo "chore(version): bump v$VERSION" > "$COMMIT_MSG_FILE"
+  fi
+fi
+
+exit 0
+
