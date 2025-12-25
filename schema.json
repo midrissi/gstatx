@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/midrissi/gstatx/main/schema.json",
+  "title": "Gstatx Configuration Schema",
+  "description": "Schema for .gstatx.json configuration file",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Reference to this JSON schema",
+      "format": "uri"
+    },
+    "contributors": {
+      "$ref": "#/$defs/contributors"
+    },
+    "cloneIfNotExists": {
+      "type": "boolean",
+      "description": "Whether to automatically clone repositories if they don't exist locally"
+    },
+    "repositories": {
+      "type": "array",
+      "description": "List of git repositories to manage",
+      "items": {
+        "$ref": "#/$defs/repository"
+      },
+      "minItems": 0
+    }
+  },
+  "required": ["repositories"],
+  "additionalProperties": false,
+  "$defs": {
+    "contributors": {
+      "type": "object",
+      "description": "Configuration for contributors command",
+      "properties": {
+        "no-commits": {
+          "type": "boolean",
+          "description": "Whether to exclude commits when displaying contributors"
+        }
+      },
+      "additionalProperties": false
+    },
+    "repository": {
+      "type": "object",
+      "description": "Git repository configuration",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Local path where the repository should be located (can be empty)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name for the repository (can be empty)"
+        },
+        "url": {
+          "type": "string",
+          "description": "Git repository URL (SSH or HTTPS)",
+          "format": "uri"
+        }
+      },
+      "required": ["url"],
+      "additionalProperties": false
+    }
+  }
+}
+
