@@ -10,6 +10,7 @@ export interface RepositoryConfig {
 
 export interface ContributorsConfig {
   "no-commits"?: boolean;
+  format?: "json" | "text";
 }
 
 export interface GstatxConfig {

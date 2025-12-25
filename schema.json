@@ -36,6 +36,12 @@
         "no-commits": {
           "type": "boolean",
           "description": "Whether to exclude commits when displaying contributors"
+        },
+        "format": {
+          "type": "string",
+          "enum": ["json", "text"],
+          "description": "Output format: 'json' for machine-readable JSON, 'text' for human-readable format",
+          "default": "text"
         }
       },
       "additionalProperties": false

@@ -1,5 +1,5 @@
-import { writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { Client } from "../lib";
 import type { Commit } from "../utils/git";
 
@@ -102,6 +102,9 @@ export async function generateHist(
 
     if (options.out) {
       const outputPath = resolve(process.cwd(), options.out);
+      // Create directory if it doesn't exist
+      const outputDir = dirname(outputPath);
+      mkdirSync(outputDir, { recursive: true });
       writeFileSync(outputPath, reportJson, "utf-8");
       console.log(`✅ Report saved to: ${outputPath}`);
       console.log(`\n📊 Summary:`);
@@ -120,7 +123,11 @@ export async function generateHist(
       console.log(reportJson);
     }
   } catch (error) {
-    console.error(`Error generating history report:`, error);
-    throw error;
+    const errorMessage =
+      error instanceof Error ? error.message : String(error);
+    console.error(
+      `\n❌ \x1b[31mError generating history report:\x1b[0m \x1b[91m${errorMessage}\x1b[0m`,
+    );
+    process.exit(1);
   }
 }

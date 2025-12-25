@@ -37,6 +37,14 @@ program
   .command("contributors")
   .description("List contributors for specified repositories")
   .option("--no-commits", "Hide commit counts in contributor list")
+  .option(
+    "-f, --format <format>",
+    "Output format: 'json' or 'text' (default: 'text')",
+  )
+  .option(
+    "-u, --unique-emails",
+    "List unique email addresses only (deduplicates by email)",
+  )
   .argument("[repo-paths...]", "Repository paths")
   .action(async (repoPaths: string[], options, command) => {
     const configPath = command.parent?.opts().config as string | undefined;
@@ -45,13 +53,32 @@ program
       loadedConfig?.config.contributors?.["no-commits"] ?? false;
     const showCommits = !(options.noCommits || configNoCommits);
 
+    // Get format from CLI option or config file (CLI overrides config)
+    // Default to "text" if neither CLI option nor config is provided
+    const configFormat =
+      (loadedConfig?.config.contributors?.format as string) || "text";
+    const format = (options.format as string | undefined) || configFormat;
+    if (format !== "json" && format !== "text") {
+      console.error(
+        `\n❌ \x1b[31mError:\x1b[0m \x1b[91mInvalid format '${format}'. Must be 'json' or 'text'\x1b[0m`,
+      );
+      process.exit(1);
+    }
+
     // Use config repositories if no paths provided
     const pathsToUse = repoPaths.length === 0 ? undefined : repoPaths;
-    await listContributors(pathsToUse, showCommits, configPath);
+    const uniqueEmails = options.uniqueEmails || false;
+    await listContributors(
+      pathsToUse,
+      showCommits,
+      configPath,
+      format,
+      uniqueEmails,
+    );
   })
   .addHelpText(
     "after",
-    "\nExamples:\n  gstatx contributors ./my-repo\n  gstatx contributors ./repo1 ./repo2\n  gstatx contributors --no-commits ./my-repo",
+    "\nExamples:\n  gstatx contributors ./my-repo\n  gstatx contributors ./repo1 ./repo2\n  gstatx contributors --no-commits ./my-repo\n  gstatx contributors --format json ./my-repo\n  gstatx contributors --unique-emails ./my-repo",
   );
 
 // Hist command

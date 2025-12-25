@@ -28,6 +28,12 @@ gstatx contributors ./repo1 ./repo2 ./repo3
 # Hide commit counts
 gstatx contributors --no-commits ./my-repo
 
+# Output as JSON
+gstatx contributors --format json ./my-repo
+
+# List unique email addresses
+gstatx contributors --unique-emails ./my-repo
+
 # Generate commit history report
 gstatx hist ./my-repo
 
@@ -50,11 +56,13 @@ gstatx contributors [options] [repo-paths...]
 
 **Options:**
 - `--no-commits` - Hide commit counts in contributor list
+- `-f, --format <format>` - Output format: `json` or `text` (default: `text`)
+- `-u, --unique-emails` - List unique email addresses only (deduplicates by email across all repositories)
 - `--help, -h` - Show help message
 
 **Examples:**
 ```bash
-# List contributors with commit counts
+# List contributors with commit counts (text format)
 gstatx contributors ./my-repo
 
 # List contributors without commit counts
@@ -63,9 +71,25 @@ gstatx contributors --no-commits ./my-repo
 # List contributors for multiple repositories
 gstatx contributors ./repo1 ./repo2 ./repo3
 
+# Output as JSON
+gstatx contributors --format json ./my-repo
+
+# Output as JSON without commit counts
+gstatx contributors --format json --no-commits ./my-repo
+
+# List unique email addresses (deduplicates by email)
+gstatx contributors --unique-emails ./my-repo
+
+# List unique emails as JSON
+gstatx contributors --unique-emails --format json ./my-repo
+
 # Use repositories from config file
 gstatx contributors
 ```
+
+**Output Formats:**
+- `text` (default): Human-readable format with emojis and formatting
+- `json`: Machine-readable JSON format, useful for scripting or integration with other tools
 
 #### `hist`
 
@@ -104,6 +128,27 @@ The report includes:
 - Commit details (hash, author, date, message)
 - File-level statistics (files changed, insertions, deletions)
 - Summary statistics per repository
+
+### .mailmap Support
+
+gstatx automatically detects and uses `.mailmap` files if they exist in your git repositories. The `.mailmap` file allows you to consolidate contributors who use different names or email addresses across commits.
+
+**How it works:**
+- If a `.mailmap` file exists in a repository, gstatx automatically uses it when retrieving contributor and commit information
+- This helps normalize author names and emails, making contributor lists more accurate
+- The `.mailmap` file follows Git's standard format
+
+**Example `.mailmap` file:**
+```
+Proper Name <proper.email@example.com> <old.email@example.com>
+Proper Name <proper.email@example.com> <nickname@example.com>
+```
+
+**Benefits:**
+- Consolidates multiple email addresses for the same person
+- Normalizes different name variations
+- Works automatically - no configuration needed
+- Applies to both `contributors` and `hist` commands
 
 ### Configuration File
 

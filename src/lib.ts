@@ -85,7 +85,7 @@ export class Client {
       for (const repo of this.config.repositories) {
         if (!repo.path) {
           console.error(
-            `Error: Repository ${repo.name || "unknown"} has no path and no URL`,
+            `\n❌ \x1b[31mError:\x1b[0m \x1b[91mRepository ${repo.name || "unknown"} has no path and no URL\x1b[0m`,
           );
           ensuredPaths.push("");
           continue;
@@ -197,7 +197,7 @@ export class Client {
       }
 
       try {
-        const commits = getCommits(repoPath, since, until);
+        const commits = await getCommits(repoPath, since, until);
         results.push({
           path: repoPath,
           commits,
