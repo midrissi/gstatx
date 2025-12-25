@@ -25,6 +25,7 @@ export type * from "./types";
 
 export interface ClientOptions extends GstatxConfig {
   cloneIfNotExists?: boolean;
+  pullIfExists?: boolean;
   repositories?: RepositoryConfig[];
   configPath?: string;
 }
@@ -81,6 +82,7 @@ export class Client {
 
     // Ensure repositories exist if cloneIfNotExists is enabled
     if (this.config.cloneIfNotExists && this.config.repositories) {
+      const pullIfExists = this.config.pullIfExists ?? true; // Default to true
       const ensuredPaths: string[] = [];
       for (const repo of this.config.repositories) {
         if (!repo.path) {
@@ -90,7 +92,7 @@ export class Client {
           ensuredPaths.push("");
           continue;
         }
-        const ensuredPath = await ensureRepository(repo);
+        const ensuredPath = await ensureRepository(repo, pullIfExists);
         if (ensuredPath) {
           ensuredPaths.push(ensuredPath);
         } else {

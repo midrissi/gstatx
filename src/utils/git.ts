@@ -265,8 +265,7 @@ export async function getCommits(
   const useMailmap = await hasMailmap(repoPath);
   const mailmapFlag = useMailmap ? " --use-mailmap" : "";
 
-  let gitLogCmd =
-    `git log --format="%H|%an|%ae|%ad|%s" --date=iso-strict --numstat${mailmapFlag}`;
+  let gitLogCmd = `git log --format="%H|%an|%ae|%ad|%s" --date=iso-strict --numstat${mailmapFlag}`;
 
   if (since) {
     gitLogCmd += ` --since="${since}"`;

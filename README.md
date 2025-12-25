@@ -166,6 +166,7 @@ You can create a `.gstatxrc.json` file to set default options and repository pat
     "no-commits": false
   },
   "cloneIfNotExists": false,
+  "pullIfExists": true,
   "repositories": [
     {
       "path": "../my-repo",
@@ -179,6 +180,7 @@ You can create a `.gstatxrc.json` file to set default options and repository pat
 **Configuration Fields:**
 - `contributors.no-commits` (boolean, optional): Hide commit counts by default
 - `cloneIfNotExists` (boolean, optional): Automatically clone repositories that don't exist locally
+- `pullIfExists` (boolean, optional): Pull latest changes if repository already exists (default: `true`)
 - `repositories` (array, optional): List of repositories to process
   - `path` (string, required): Repository path (relative to config file location)
   - `name` (string, optional): Display name for the repository
@@ -187,6 +189,7 @@ You can create a `.gstatxrc.json` file to set default options and repository pat
 **Important Notes:**
 - Repository paths in the config file are resolved relative to the `.gstatxrc.json` file location, not the current working directory
 - If `cloneIfNotExists: true` and a repository doesn't exist, it will be cloned from the `url`
+- If `pullIfExists: true` (default) and a repository already exists, it will pull the latest changes before processing
 - CLI arguments always override config file values
 - Both `contributors` and `hist` commands can use repositories from the config file
 
@@ -245,13 +248,15 @@ gstatx hist --since "1 month ago" --out report.json
 
 The tool will automatically use the repositories listed in your config file.
 
-### Auto-Cloning Repositories
+### Auto-Cloning and Auto-Updating Repositories
 
 When `cloneIfNotExists: true` is set in your config:
 
 1. The tool checks if each repository exists at the specified path
 2. If the repository doesn't exist and a `url` is provided, it will be cloned automatically
-3. If the repository already exists, it will be used as-is
+3. If the repository already exists:
+   - If `pullIfExists: true` (default), it will pull the latest changes before processing
+   - If `pullIfExists: false`, it will be used as-is without updating
 4. If the path exists but isn't a git repository, an error is shown
 
 **Example:**
@@ -332,6 +337,7 @@ import {
 ```typescript
 interface ClientOptions {
   cloneIfNotExists?: boolean;
+  pullIfExists?: boolean;
   repositories?: RepositoryConfig[];
   configPath?: string;
   contributors?: {

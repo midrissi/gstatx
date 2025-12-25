@@ -123,8 +123,7 @@ export async function generateHist(
       console.log(reportJson);
     }
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : String(error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(
       `\n❌ \x1b[31mError generating history report:\x1b[0m \x1b[91m${errorMessage}\x1b[0m`,
     );

@@ -7,8 +7,12 @@ export function showHelp(): void {
   console.log("\nList contributors for specified git repositories.");
   console.log("\nOptions:");
   console.log("  --no-commits    Hide commit counts in contributor list");
-  console.log("  -f, --format <format>  Output format: 'json' or 'text' (default: 'text')");
-  console.log("  -u, --unique-emails   List unique email addresses only (deduplicates by email)");
+  console.log(
+    "  -f, --format <format>  Output format: 'json' or 'text' (default: 'text')",
+  );
+  console.log(
+    "  -u, --unique-emails   List unique email addresses only (deduplicates by email)",
+  );
   console.log("  --help, -h      Show this help message");
   console.log("\nExamples:");
   console.log("  gstatx contributors ./my-repo");
@@ -145,8 +149,7 @@ export async function listContributors(
       }
     }
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : String(error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(
       `\n❌ \x1b[31mError processing repositories:\x1b[0m \x1b[91m${errorMessage}\x1b[0m`,
     );

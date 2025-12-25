@@ -10,6 +10,7 @@ const execAsync = promisify(exec);
 
 export async function ensureRepository(
   repo: RepositoryConfig,
+  pullIfExists: boolean = true,
 ): Promise<string | null> {
   // Path must be set at this point (should be normalized before calling this)
   if (!repo.path) {
@@ -21,6 +22,18 @@ export async function ensureRepository(
 
   // Check if repository exists and is a git repo
   if (existsSync(repo.path) && (await isGitRepo(repo.path))) {
+    // Pull latest changes if repo already exists and pullIfExists is enabled
+    if (pullIfExists) {
+      try {
+        console.log(`Pulling latest changes for ${repo.name || repo.path}...`);
+        await execAsync(`git pull`, { cwd: repo.path });
+        console.log(`✓ Successfully updated ${repo.name || repo.path}`);
+      } catch (error) {
+        console.warn(
+          `Warning: Failed to pull latest changes for ${repo.path}: ${error}. Continuing with existing code.`,
+        );
+      }
+    }
     return repo.path;
   }
 

@@ -47,7 +47,8 @@ program
   )
   .argument("[repo-paths...]", "Repository paths")
   .action(async (repoPaths: string[], options, command) => {
-    const configPath = command.parent?.opts().config as string | undefined;
+    const configPath =
+      (command.parent?.opts().config as string | undefined) ?? ".gstatxrc.json";
     const loadedConfig = await loadConfig(configPath);
     const configNoCommits =
       loadedConfig?.config.contributors?.["no-commits"] ?? false;
@@ -96,7 +97,8 @@ program
   .option("-o, --out <file>", "Output file path (defaults to stdout)")
   .argument("[repo-paths...]", "Repository paths")
   .action(async (repoPaths: string[], options, command) => {
-    const configPath = command.parent?.opts().config as string | undefined;
+    const configPath =
+      (command.parent?.opts().config as string | undefined) ?? ".gstatxrc.json";
     const histOptions = {
       since: options.since as string | undefined,
       until: options.until as string | undefined,
@@ -121,6 +123,8 @@ Configuration:
   and repository paths. CLI arguments override config values.
   Set 'cloneIfNotExists: true' to automatically clone repositories
   that don't exist locally (requires 'url' in repository config).
+  Set 'pullIfExists: true' (default) to pull latest changes for
+  existing repositories, or 'pullIfExists: false' to skip updating.
 `,
 );
 

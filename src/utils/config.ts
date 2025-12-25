@@ -17,6 +17,7 @@ export interface GstatxConfig {
   contributors?: ContributorsConfig;
   repositories?: RepositoryConfig[];
   cloneIfNotExists?: boolean;
+  pullIfExists?: boolean;
 }
 
 const CONFIG_FILE_NAME = ".gstatxrc.json";
