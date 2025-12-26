@@ -91,12 +91,16 @@ export interface Commit {
   insertions: number;
   deletions: number;
   files: CommitFile[];
+  branches: string[];
 }
 
 export async function getContributors(
   repoPath: string,
 ): Promise<RepoContributor[]> {
   try {
+    // Fetch all remote branches first
+    await fetchAllBranches(repoPath);
+
     // Check if .mailmap exists
     const useMailmap = await hasMailmap(repoPath);
 
@@ -207,7 +211,7 @@ export async function getContributors(
 
           // Get email for this author
           const { stdout: emailOutput } = await execAsync(
-            `git log --format='%aE' --author="${name.replace(/"/g, '\\"')}" -1`,
+            `git log --all --format='%aE' --author="${name.replace(/"/g, '\\"')}" -1`,
             { cwd: repoPath },
           );
           const email = emailOutput.trim().split("\n")[0] || "";
@@ -256,16 +260,33 @@ export async function getContributors(
   }
 }
 
+/**
+ * Fetch all remote branches for a repository
+ */
+async function fetchAllBranches(repoPath: string): Promise<void> {
+  try {
+    await execAsync(`git fetch --all --prune`, {
+      cwd: repoPath,
+    });
+  } catch {
+    // Silently fail if fetch fails (might not have remotes configured)
+    // This is not critical for local repositories
+  }
+}
+
 export async function getCommits(
   repoPath: string,
   since?: string,
   until?: string,
 ): Promise<Commit[]> {
+  // Fetch all remote branches first
+  await fetchAllBranches(repoPath);
+
   // Check if .mailmap exists and add --use-mailmap flag if it does
   const useMailmap = await hasMailmap(repoPath);
   const mailmapFlag = useMailmap ? " --use-mailmap" : "";
 
-  let gitLogCmd = `git log --format="%H|%an|%ae|%ad|%s" --date=iso-strict --numstat${mailmapFlag}`;
+  let gitLogCmd = `git log --all --format="%H|%an|%ae|%ad|%s|%D" --date=iso-strict --numstat${mailmapFlag}`;
 
   if (since) {
     gitLogCmd += ` --since="${since}"`;
@@ -311,23 +332,62 @@ export async function getCommits(
           insertions: currentInsertions,
           deletions: currentDeletions,
           files: currentFiles,
+          branches: currentCommit.branches || [],
         });
       }
 
       // Parse new commit header
-      const [hash, author, email, date, ...messageParts] = line.split("|");
-      if (hash && author && email && date) {
-        currentCommit = {
-          hash: hash.trim(),
-          author: author.trim(),
-          email: email.trim(),
-          date: date.trim(),
-          message: messageParts.join("|").trim(),
-        };
-        currentFilesChanged = 0;
-        currentInsertions = 0;
-        currentDeletions = 0;
-        currentFiles = [];
+      // Format: hash|author|email|date|message|refs
+      const parts = line.split("|");
+      if (parts.length >= 6) {
+        const hash = parts[0]?.trim();
+        const author = parts[1]?.trim();
+        const email = parts[2]?.trim();
+        const date = parts[3]?.trim();
+        const message = parts[4]?.trim();
+        const refs = parts[5]?.trim() || "";
+        
+        if (hash && author && email && date) {
+          // Parse branches from refs (format: "HEAD -> main, origin/main, tag: v1.0")
+          // Extract branch names (skip tags and HEAD)
+          const branchNames: string[] = [];
+          if (refs) {
+            const refParts = refs.split(",").map((r) => r.trim());
+            for (const ref of refParts) {
+              // Handle "HEAD -> branch" format
+              if (ref.startsWith("HEAD ->")) {
+                const branchMatch = ref.match(/HEAD -> (.+)/);
+                if (branchMatch?.[1]) {
+                  const branchName = branchMatch[1].trim();
+                  // Remove remote prefix if present
+                  const cleanBranch = branchName.replace(/^(origin|upstream|remote)\//, "");
+                  if (cleanBranch && !branchNames.includes(cleanBranch)) {
+                    branchNames.push(cleanBranch);
+                  }
+                }
+              } else if (!ref.startsWith("tag:") && !ref.startsWith("HEAD")) {
+                // Remove remote prefix (origin/, upstream/, etc.) for cleaner branch names
+                const cleanRef = ref.replace(/^(origin|upstream|remote)\//, "");
+                if (cleanRef && !branchNames.includes(cleanRef)) {
+                  branchNames.push(cleanRef);
+                }
+              }
+            }
+          }
+          
+          currentCommit = {
+            hash,
+            author,
+            email,
+            date,
+            message,
+            branches: branchNames,
+          };
+          currentFilesChanged = 0;
+          currentInsertions = 0;
+          currentDeletions = 0;
+          currentFiles = [];
+        }
       }
     } else {
       // Parse numstat line (insertions deletions filename)
@@ -369,6 +429,7 @@ export async function getCommits(
       insertions: currentInsertions,
       deletions: currentDeletions,
       files: currentFiles,
+      branches: currentCommit.branches || [],
     });
   }
 

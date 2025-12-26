@@ -92,7 +92,7 @@ program
   )
   .option(
     "-u, --until <date>",
-    'End date for the report (e.g., "2024-12-31", "now")',
+    'End date for the report (e.g., "2024-12-31", "now") (default: "now")',
   )
   .option("-o, --out <file>", "Output file path (defaults to stdout)")
   .argument("[repo-paths...]", "Repository paths")
@@ -101,7 +101,7 @@ program
       (command.parent?.opts().config as string | undefined) ?? ".gstatxrc.json";
     const histOptions = {
       since: options.since as string | undefined,
-      until: options.until as string | undefined,
+      until: (options.until as string | undefined) ?? "now",
       out: options.out as string | undefined,
     };
 

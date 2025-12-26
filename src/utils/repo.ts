@@ -25,12 +25,14 @@ export async function ensureRepository(
     // Pull latest changes if repo already exists and pullIfExists is enabled
     if (pullIfExists) {
       try {
+        console.log(`Fetching all remote branches for ${repo.name || repo.path}...`);
+        await execAsync(`git fetch --all --prune`, { cwd: repo.path });
         console.log(`Pulling latest changes for ${repo.name || repo.path}...`);
         await execAsync(`git pull`, { cwd: repo.path });
         console.log(`✓ Successfully updated ${repo.name || repo.path}`);
       } catch (error) {
         console.warn(
-          `Warning: Failed to pull latest changes for ${repo.path}: ${error}. Continuing with existing code.`,
+          `Warning: Failed to update ${repo.path}: ${error}. Continuing with existing code.`,
         );
       }
     }
@@ -68,6 +70,13 @@ export async function ensureRepository(
 
     // Clone the repository
     await execAsync(`git clone "${repo.url}" "${repo.path}"`);
+
+    // Fetch all remote branches after cloning
+    try {
+      await execAsync(`git fetch --all --prune`, { cwd: repo.path });
+    } catch (error) {
+      // Silently fail if fetch fails (might not have remotes configured)
+    }
 
     console.log(`✓ Successfully cloned ${repo.name || repoName}`);
     return repo.path;
