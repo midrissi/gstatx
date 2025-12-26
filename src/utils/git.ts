@@ -332,21 +332,24 @@ export async function getCommits(
           insertions: currentInsertions,
           deletions: currentDeletions,
           files: currentFiles,
-          branches: currentCommit.branches || [],
+          branches: Array.isArray(currentCommit.branches)
+            ? currentCommit.branches
+            : [],
         });
       }
 
       // Parse new commit header
       // Format: hash|author|email|date|message|refs
       const parts = line.split("|");
-      if (parts.length >= 6) {
+      if (parts.length >= 5) {
         const hash = parts[0]?.trim();
         const author = parts[1]?.trim();
         const email = parts[2]?.trim();
         const date = parts[3]?.trim();
         const message = parts[4]?.trim();
-        const refs = parts[5]?.trim() || "";
-        
+        // refs might be missing if commit has no refs, so handle both 5 and 6 parts
+        const refs = (parts[5]?.trim() || "").trim();
+
         if (hash && author && email && date) {
           // Parse branches from refs (format: "HEAD -> main, origin/main, tag: v1.0")
           // Extract branch names (skip tags and HEAD)
@@ -360,7 +363,10 @@ export async function getCommits(
                 if (branchMatch?.[1]) {
                   const branchName = branchMatch[1].trim();
                   // Remove remote prefix if present
-                  const cleanBranch = branchName.replace(/^(origin|upstream|remote)\//, "");
+                  const cleanBranch = branchName.replace(
+                    /^(origin|upstream|remote)\//,
+                    "",
+                  );
                   if (cleanBranch && !branchNames.includes(cleanBranch)) {
                     branchNames.push(cleanBranch);
                   }
@@ -374,14 +380,14 @@ export async function getCommits(
               }
             }
           }
-          
+
           currentCommit = {
             hash,
             author,
             email,
             date,
             message,
-            branches: branchNames,
+            branches: branchNames, // Always an array, even if empty
           };
           currentFilesChanged = 0;
           currentInsertions = 0;
@@ -429,8 +435,53 @@ export async function getCommits(
       insertions: currentInsertions,
       deletions: currentDeletions,
       files: currentFiles,
-      branches: currentCommit.branches || [],
+      branches: Array.isArray(currentCommit.branches)
+        ? currentCommit.branches
+        : [],
     });
+  }
+
+  // Post-process: Get all branches containing each commit
+  // %D only shows refs pointing directly to commits, not all branches containing them
+  for (const commit of commits) {
+    if (commit.hash) {
+      try {
+        // Get all branches (local and remote) containing this commit
+        const { stdout: branchOutput } = await execAsync(
+          `git branch -a --contains ${commit.hash}`,
+          {
+            cwd: repoPath,
+          },
+        );
+
+        const branchNames: string[] = [];
+        const lines = branchOutput.trim().split("\n");
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          // Remove leading * and spaces, and handle remotes
+          const branch = line
+            .replace(/^\*\s*/, "")
+            .trim()
+            .replace(/^remotes\//, "")
+            .replace(/^(origin|upstream|remote)\//, "");
+
+          if (
+            branch &&
+            !branch.startsWith("HEAD") &&
+            !branchNames.includes(branch)
+          ) {
+            branchNames.push(branch);
+          }
+        }
+
+        // Merge with existing branches from %D (avoid duplicates)
+        const allBranches = [...new Set([...commit.branches, ...branchNames])];
+        commit.branches = allBranches;
+      } catch {
+        // If branch lookup fails, keep existing branches (or empty array)
+        // This can happen if commit doesn't exist or repo is corrupted
+      }
+    }
   }
 
   return commits;
