@@ -17,6 +17,11 @@
       "type": "boolean",
       "description": "Whether to automatically clone repositories if they don't exist locally"
     },
+    "pullIfExists": {
+      "type": "boolean",
+      "description": "Whether to pull latest changes if repository already exists (default: true)",
+      "default": true
+    },
     "repositories": {
       "type": "array",
       "description": "List of git repositories to manage",

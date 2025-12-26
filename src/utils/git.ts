@@ -443,45 +443,91 @@ export async function getCommits(
 
   // Post-process: Get all branches containing each commit
   // %D only shows refs pointing directly to commits, not all branches containing them
-  for (const commit of commits) {
-    if (commit.hash) {
+  // Optimize by building a commit->branches map instead of querying each commit
+  try {
+    // Get all branch names (local and remote)
+    const { stdout: allBranchesOutput } = await execAsync(`git branch -a`, {
+      cwd: repoPath,
+    });
+
+    const branchLines = allBranchesOutput.trim().split("\n");
+    const branchRefs: Array<{ ref: string; cleanName: string }> = [];
+    const seenCleanNames = new Set<string>();
+
+    for (const line of branchLines) {
+      if (!line.trim()) continue;
+      // Get original branch reference (with remotes/ prefix if remote)
+      const originalRef = line.replace(/^\*\s*/, "").trim();
+
+      if (!originalRef || originalRef.startsWith("HEAD")) continue;
+
+      // Clean branch name for display (remove remote prefix)
+      const cleanName = originalRef
+        .replace(/^remotes\//, "")
+        .replace(/^(origin|upstream|remote)\//, "");
+
+      // Only add if we haven't seen this clean name before (avoid duplicates)
+      // But we still need to process the ref to get all commits
+      if (cleanName && !seenCleanNames.has(cleanName)) {
+        seenCleanNames.add(cleanName);
+        branchRefs.push({ ref: originalRef, cleanName });
+      } else if (cleanName) {
+        // If we've seen the clean name, still add the ref (might be different remote)
+        // but use the clean name for the map
+        branchRefs.push({ ref: originalRef, cleanName });
+      }
+    }
+
+    // Build a map of commit hash -> branches that contain it
+    const commitToBranches = new Map<string, Set<string>>();
+
+    // For each branch, get all commit hashes and add them to the map
+    for (const { ref, cleanName } of branchRefs) {
       try {
-        // Get all branches (local and remote) containing this commit
-        const { stdout: branchOutput } = await execAsync(
-          `git branch -a --contains ${commit.hash}`,
+        // Get all commit hashes in this branch using the original ref
+        const { stdout: commitsOutput } = await execAsync(
+          `git rev-list ${ref}`,
           {
             cwd: repoPath,
           },
         );
 
-        const branchNames: string[] = [];
-        const lines = branchOutput.trim().split("\n");
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          // Remove leading * and spaces, and handle remotes
-          const branch = line
-            .replace(/^\*\s*/, "")
-            .trim()
-            .replace(/^remotes\//, "")
-            .replace(/^(origin|upstream|remote)\//, "");
-
-          if (
-            branch &&
-            !branch.startsWith("HEAD") &&
-            !branchNames.includes(branch)
-          ) {
-            branchNames.push(branch);
+        const commitHashes = commitsOutput
+          .trim()
+          .split("\n")
+          .filter((h) => h.trim());
+        for (const hash of commitHashes) {
+          if (!commitToBranches.has(hash)) {
+            commitToBranches.set(hash, new Set());
           }
+          // Use clean name for consistency
+          commitToBranches.get(hash)?.add(cleanName);
         }
-
-        // Merge with existing branches from %D (avoid duplicates)
-        const allBranches = [...new Set([...commit.branches, ...branchNames])];
-        commit.branches = allBranches;
       } catch {
-        // If branch lookup fails, keep existing branches (or empty array)
-        // This can happen if commit doesn't exist or repo is corrupted
+        // Skip branches that can't be accessed (might be deleted or invalid)
       }
     }
+
+    // Now update each commit with its branches
+    for (const commit of commits) {
+      if (commit.hash) {
+        const branchesForCommit = commitToBranches.get(commit.hash);
+        if (branchesForCommit && branchesForCommit.size > 0) {
+          // Merge with existing branches from %D (avoid duplicates)
+          const allBranches = [
+            ...new Set([...commit.branches, ...Array.from(branchesForCommit)]),
+          ];
+          commit.branches = allBranches;
+        } else {
+          // Commit not found in any branch, keep existing branches from %D or empty array
+          // This ensures branches is always an array
+          commit.branches = commit.branches || [];
+        }
+      }
+    }
+  } catch {
+    // If branch lookup fails, keep existing branches (or empty array)
+    // This can happen if repo is corrupted or has no branches
   }
 
   return commits;
