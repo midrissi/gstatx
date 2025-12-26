@@ -1,6 +1,6 @@
 {
   "name": "gstatx",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Export stats of a repo or list of repos",
   "type": "module",
   "engines": {
