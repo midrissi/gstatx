@@ -162,8 +162,9 @@ export async function getContributors(
             commits: existing.commits + 1,
           });
         } else {
-          // Use canonical email from mapping if available, otherwise use original
-          const canonicalEmail = mappedEmail || email;
+          // Use canonical email from mapping if available, otherwise use normalized (lowercase)
+          // Ensure email is always lowercase
+          const canonicalEmail = mappedEmail ? mappedEmail.toLowerCase() : normalizedEmail;
           contributorsMap.set(normalizedEmail, {
             name,
             email: canonicalEmail,
@@ -217,6 +218,7 @@ export async function getContributors(
           const email = emailOutput.trim().split("\n")[0] || "";
 
           // Aggregate by email address (case-insensitive)
+          // Normalize email to lowercase
           const emailLower = email.toLowerCase();
           const existing = contributorsMap.get(emailLower);
 
@@ -226,7 +228,7 @@ export async function getContributors(
             if (commits > existing.maxIndividualCommits) {
               contributorsMap.set(emailLower, {
                 name,
-                email,
+                email: emailLower, // Store normalized lowercase email
                 commits: newTotal,
                 maxIndividualCommits: commits,
               });
@@ -239,7 +241,7 @@ export async function getContributors(
           } else {
             contributorsMap.set(emailLower, {
               name,
-              email,
+              email: emailLower, // Store normalized lowercase email
               commits,
               maxIndividualCommits: commits,
             });
@@ -250,7 +252,7 @@ export async function getContributors(
 
     const contributors = Array.from(contributorsMap.values()).map((c) => ({
       name: c.name,
-      email: c.email,
+      email: c.email.toLowerCase(), // Ensure email is normalized to lowercase
       commits: c.commits,
     }));
 
@@ -351,6 +353,9 @@ export async function getCommits(
         const refs = (parts[5]?.trim() || "").trim();
 
         if (hash && author && email && date) {
+          // Normalize email to lowercase
+          const normalizedEmail = email.toLowerCase();
+          
           // Parse branches from refs (format: "HEAD -> main, origin/main, tag: v1.0")
           // Extract branch names (skip tags and HEAD)
           const branchNames: string[] = [];
@@ -384,7 +389,7 @@ export async function getCommits(
           currentCommit = {
             hash,
             author,
-            email,
+            email: normalizedEmail, // Store normalized lowercase email
             date,
             message,
             branches: branchNames, // Always an array, even if empty
