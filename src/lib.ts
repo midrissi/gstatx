@@ -26,6 +26,7 @@ export type * from "./types";
 export interface ClientOptions extends GstatxConfig {
   cloneIfNotExists?: boolean;
   pullIfExists?: boolean;
+  noArchived?: boolean;
   repositories?: RepositoryConfig[];
   configPath?: string;
 }
@@ -78,6 +79,13 @@ export class Client {
         }
         return repo;
       });
+
+      // Filter out archived repositories if noArchived is true
+      if (this.config.noArchived) {
+        this.config.repositories = this.config.repositories.filter(
+          (repo) => !repo.archived,
+        );
+      }
     }
 
     // Ensure repositories exist if cloneIfNotExists is enabled

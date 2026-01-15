@@ -6,6 +6,7 @@ export interface RepositoryConfig {
   path?: string;
   name?: string;
   url?: string;
+  archived?: boolean;
 }
 
 export interface ContributorsConfig {
@@ -18,6 +19,7 @@ export interface GstatxConfig {
   repositories?: RepositoryConfig[];
   cloneIfNotExists?: boolean;
   pullIfExists?: boolean;
+  noArchived?: boolean;
 }
 
 const CONFIG_FILE_NAME = ".gstatxrc.json";
