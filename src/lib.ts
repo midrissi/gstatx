@@ -82,6 +82,18 @@ export class Client {
 
       // Filter out archived repositories if noArchived is true
       if (this.config.noArchived) {
+        const archivedRepos = this.config.repositories.filter(
+          (repo) => repo.archived === true,
+        );
+        if (archivedRepos.length > 0) {
+          console.log(
+            `\n⚠️  \x1b[33mSkipping ${archivedRepos.length} archived repository/repositories:\x1b[0m`,
+          );
+          for (const repo of archivedRepos) {
+            const repoName = repo.name || repo.path || repo.url || "unknown";
+            console.log(`   - ${repoName}`);
+          }
+        }
         this.config.repositories = this.config.repositories.filter(
           (repo) => !repo.archived,
         );
